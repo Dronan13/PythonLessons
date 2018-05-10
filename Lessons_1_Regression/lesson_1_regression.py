@@ -1,10 +1,14 @@
 import pandas as pd
-import quandl
-import math
+import quandl, math, datetime
 import numpy as np
-
-from sklearn import preprocessing, cross_validation, svm
+import matplotlib.pyplot as plt
+from matplotlib import style
+from sklearn import preprocessing,  svm
 from sklearn.linear_model import LinearRegression
+from sklearn.model_selection import train_test_split
+import pickle
+
+style.use('ggplot')
 
 #loads dataframe from quandl
 df = quandl.get('WIKI/GOOGL') 
@@ -25,8 +29,6 @@ df['PCT_change'] = (df['Adj. Close'] - df['Adj. Open'])/ df['Adj. Open']*100
 
 df = df[['Adj. Close', 'HL_PCT', 'PCT_change', 'Adj. Volume']]
 
-#print(df.head()) 
-
 forecast_col = 'Adj. Close'
 
 df.fillna(-99999, inplace = True) #replace non
@@ -37,33 +39,62 @@ forecast_out = int(math.ceil(0.01*len(df)))
 print('Prediction for {} days'.format(forecast_out)) 
 
 df['label'] = df[forecast_col].shift(-forecast_out)
-df.dropna(inplace = True)
 
 x = np.array(df.drop(['label'],1))
-y = np.array(df['label'])
-
 x = preprocessing.scale(x)
+x = x[:-forecast_out]
+x_lately = x[-forecast_out:]
 
-#x = x[:-forecast_out+1]
 df.dropna(inplace = True)
-
 y = np.array(df['label'])
 
-#print(len(x), len(y))
+#print('Data has {} input and {} output values'.format(len(x), len(y)))
 
-x_train, x_test, y_train, y_test = cross_validation.train_test_split(x, y, test_size = 0.2)
+x_train, x_test, y_train, y_test = train_test_split(x, y, test_size = 0.2)
 
-clf = LinearRegression() # n_jobs= x number of threads
+clf = LinearRegression(n_jobs = -1) # n_jobs= x number of threads; -1 max number of threads
 clf.fit(x_train, y_train) # train on data
-accuracy = clf.score(x_test, y_test) # test on data
 
+#writes training model to file
+with open('lr.pickle','wb') as f: 
+    pickle.dump(clf, f)
+    
+#reads training model from file
+pickle_in = open('lr.pickle','rb')
+clf = pickle.load(pickle_in)
+ 
+accuracy = clf.score(x_test, y_test) # test on data
+ 
 print('Linear regression accuracy ', accuracy)
 
-clf = svm.SVR()
-clf.fit(x_train, y_train) # train on data
-accuracy = clf.score(x_test, y_test) # test on data
+#clf = svm.SVR()
+#clf.fit(x_train, y_train) # train on data
+#accuracy = clf.score(x_test, y_test) # test on data
 
-print('Support vector regression accuracy ', accuracy)
+#print('Support vector regression accuracy ', accuracy)
+
+forecast_set = clf.predict(x_lately)
+
+df['Forecast'] = np.nan
+
+last_date = df.iloc[-1].name
+last_unix = last_date.timestamp()
+one_day = 86400
+next_unix = last_unix + one_day
+
+for i in forecast_set:
+    next_date = datetime.datetime.fromtimestamp(next_unix)
+    next_unix += one_day
+    df.loc[next_date] = [np.nan for _ in range(len(df.columns)-1)]+[i]
+    
+df['Adj. Close'].plot()
+df['Forecast'].plot()
+
+plt.legend(loc=4)
+plt.xlabel('Date')
+plt.ylabel('Price')
+plt.show()
+
 
 
 
