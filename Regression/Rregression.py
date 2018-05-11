@@ -1,4 +1,3 @@
-import pandas as pd
 import quandl, math, datetime
 import numpy as np
 import matplotlib.pyplot as plt
@@ -8,13 +7,13 @@ from sklearn.linear_model import LinearRegression
 from sklearn.model_selection import train_test_split
 import pickle
 
+
 style.use('ggplot')
 
 #loads dataframe from quandl
 df = quandl.get('WIKI/GOOGL') 
 #print(df.head())
 #tcRqukPKR9otxWkDdMf6 api key
-
 
 # save to csv
 #file_name = 'GOOGL.csv'
@@ -23,6 +22,7 @@ df = quandl.get('WIKI/GOOGL')
 # reads from csv
 #df = pd.read_csv(file_name) 
 # use 'Date', aster saving to csv
+
 df = df[['Adj. Open', 'Adj. High', 'Adj. Low', 'Adj. Close', 'Adj. Volume']]
 df['HL_PCT'] = (df['Adj. High'] - df['Adj. Close'])/ df['Adj. Close']*100
 df['PCT_change'] = (df['Adj. Close'] - df['Adj. Open'])/ df['Adj. Open']*100
@@ -52,7 +52,8 @@ y = np.array(df['label'])
 
 x_train, x_test, y_train, y_test = train_test_split(x, y, test_size = 0.2)
 
-clf = LinearRegression(n_jobs = -1) # n_jobs= x number of threads; -1 max number of threads
+# n_jobs= x number of threads; -1 max number of threads
+clf = LinearRegression(n_jobs = -1) 
 clf.fit(x_train, y_train) # train on data
 
 #writes training model to file
