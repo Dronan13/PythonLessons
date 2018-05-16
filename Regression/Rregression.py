@@ -8,6 +8,7 @@ from sklearn.model_selection import train_test_split
 import pickle
 
 
+
 style.use('ggplot')
 
 #loads dataframe from quandl
